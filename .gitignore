@@ -161,3 +161,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# VSCode history extension
+.history
