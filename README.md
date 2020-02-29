@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # relay-app
 A react native application for relaying IoT data to the cloud through cloud-native serverless services.
 
@@ -20,16 +19,3 @@ Run:
     OR
 
     ``` npm run android && npm run start ```
-=======
-# federated-learning-react-app
-A react native application for federated learning project
-
-### To run app:
-``` npx react-native run-android ```
-
-OR
-
-``` npm run android ```
-then run 
-``` npm run start ```
->>>>>>> d5a98c88c3ad4cb2279750920c73de3be5dfb970
