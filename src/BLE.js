@@ -151,17 +151,27 @@ export default class App extends Component {
         this.setState({ peripherals });
     }
 
-    send = (msg) => {
+    send = (msg="Test Object, 20, B17CS024, IIT Jodhpur") => {
         peripheral = this.state.selectedDevice
         // setTimeout(() => {
         // BleManager.retrieveServices(peripheral.id).then((peripheralInfo) => {
         // console.log(peripheralInfo);
         var service = '13333333-3333-3333-3333-333333333337';
         var sendCharacterstic = '13333333-3333-3333-3333-333333330001';
-        const sendData = stringToBytes(msg);
+        var msgSplit = msg.split(',');
+        var jsonData = {
+            "name": msgSplit[0],
+            "age": parseInt(msgSplit[1], 10),
+            "rollno": msgSplit[2],
+            "college": msgSplit[3],
+        }
+        const jsonString = JSON.stringify(jsonData)
+        const sendData = stringToBytes(jsonString);
         BleManager.write(peripheral.id, service, sendCharacterstic, sendData).then((data) => {
-            console.log('Send data', msg, "to", peripheral.name);
-            console.warn("Msg send");
+            BleManager.write(peripheral.id, service, sendCharacterstic, stringToBytes("FIN")).then((data) => {
+                console.log('Send data', jsonString, "to", peripheral.name);
+                console.warn("Sent: " + jsonString);
+            });
         });
         // });
         // }, 900);
