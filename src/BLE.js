@@ -28,7 +28,7 @@ import { CardHeader } from './components/CardHeader';
 import { FormButton } from './components/FormButton';
 import { CardSection } from './components/CardSection';
 import { Card } from './components/Card';
-
+import { saveJson, loadJson } from './json';
 
 export default class App extends Component {
     constructor() {
@@ -151,7 +151,23 @@ export default class App extends Component {
         this.setState({ peripherals });
     }
 
-    send = (msg="Test Object, 20, B17CS024, IIT Jodhpur") => {
+    loadSaveJson = async (key, json) => {
+        loadJson(key).then((data) => {
+            var parsedData = []
+            if (data)
+                parsedData = JSON.parse(data)
+            parsedData.push(json)
+            saveJson("students", JSON.stringify(parsedData)).then(() => {
+                console.log("Saved successfully");
+                loadJson("students").then((data) => {
+                    parsedData = JSON.parse(data)
+                    console.log(parsedData)
+                })
+            })
+        })
+    }
+
+    send = (msg = "Test Object, 20, B17CS024, IIT Jodhpur") => {
         peripheral = this.state.selectedDevice
         // setTimeout(() => {
         // BleManager.retrieveServices(peripheral.id).then((peripheralInfo) => {
@@ -165,6 +181,7 @@ export default class App extends Component {
             "rollno": msgSplit[2],
             "college": msgSplit[3],
         }
+        this.loadSaveJson("students", jsonData)
         const jsonString = JSON.stringify(jsonData)
         const sendData = stringToBytes(jsonString);
         BleManager.write(peripheral.id, service, sendCharacterstic, sendData).then((data) => {
@@ -186,6 +203,7 @@ export default class App extends Component {
             BleManager.read(peripheral.id, service, receiveCharacterstic).then((data) => {
                 var receivedData = bytesToString(data);
                 receivedData = JSON.parse(receivedData)
+                this.loadSaveJson("students", receivedData)
                 console.log('Received', receivedData, "from", peripheral.name);
                 this.setState({
                     receivedMsg: receivedData
