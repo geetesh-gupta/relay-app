@@ -17,8 +17,10 @@ import {
 } from 'react-native';
 import BleManager from 'react-native-ble-manager';
 import { stringToBytes, bytesToString } from 'convert-string';
+
 const window = Dimensions.get('window');
 import { Buffer } from 'buffer'
+
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import FormView from './components/FormView';
@@ -29,6 +31,8 @@ import { FormButton } from './components/FormButton';
 import { CardSection } from './components/CardSection';
 import { Card } from './components/Card';
 import { saveJson, loadJson } from './json';
+import { getWSService } from './services/WebSocket';
+
 
 export default class App extends Component {
     constructor() {
@@ -39,7 +43,8 @@ export default class App extends Component {
             peripherals: new Map(),
             appState: '',
             selectedDevice: {},
-            receivedMsg: {}
+            receivedMsg: {},
+            socketConnection: null
         }
 
         this.handleAppStateChange = this.handleAppStateChange.bind(this);
@@ -60,7 +65,6 @@ export default class App extends Component {
         this.handlerUpdate = bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', this.handleUpdateValueForCharacteristic);
 
 
-
         if (Platform.OS === 'android' && Platform.Version >= 23) {
             PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
                 if (result) {
@@ -77,6 +81,9 @@ export default class App extends Component {
             });
         }
 
+        //Initiate the WebSocket connection for the user
+        if (!this.state.socketConnection)
+            this.setState({ socketConnection: getWSService() });
     }
 
     handleAppStateChange(nextAppState) {
@@ -194,6 +201,15 @@ export default class App extends Component {
         // }, 900);
     }
 
+    sendDataToServer = (msg = "Hello World!") => {
+        //Add a timeout to allow WebSocket connection to open
+        setTimeout(() => {
+            if (this.state.socketConnection) {
+                this.state.socketConnection.sendMessage("sendmessage", msg);
+            }
+        }, 2000);
+    }
+
     receive = () => {
         peripheral = this.state.selectedDevice
         // setTimeout(() => {
@@ -205,6 +221,7 @@ export default class App extends Component {
                 receivedData = JSON.parse(receivedData)
                 this.loadSaveJson("students", receivedData)
                 console.log('Received', receivedData, "from", peripheral.name);
+                ``
                 this.setState({
                     receivedMsg: receivedData
                 })
@@ -282,7 +299,10 @@ export default class App extends Component {
             <SafeAreaView style={styles.container}>
                 <View style={styles.container}>
                     <View style={{ margin: 10 }}>
-                        <Button title={btnScanTitle} onPress={() => { this.startScan(); this.retrieveConnected(); }} />
+                        <Button title={btnScanTitle} onPress={() => {
+                            this.startScan();
+                            this.retrieveConnected();
+                        }} />
                     </View>
 
                     <View style={{ margin: 10 }}>
@@ -301,13 +321,22 @@ export default class App extends Component {
                             keyExtractor={item => item.id}
                         />
                     </ScrollView>
+                    <FormView>
+                        <CardHeader headerText={"Server Side Connections"} />
+                        <FormColeredTextField
+                            placeholder="Enter Msg..." onChangeText={(text) => this.setState({ msg: text })}
+                            title="Send Msg to Server" />
+                        <FormButton title="Send" onFormSubmit={() => this.sendDataToServer(this.state.msg)} />
+                    </FormView>
 
                     <FormView>
                         <CardHeader headerText={`Selected ${selectedDevice.name}`} />
                         {
                             selectedDevice.name != undefined &&
                             <View>
-                                <FormColeredTextField placeholder="Enter Msg..." onChangeText={(text) => this.setState({ msg: text })} title="Send Msg" />
+                                <FormColeredTextField placeholder="Enter Msg..."
+                                    onChangeText={(text) => this.setState({ msg: text })}
+                                    title="Send Msg" />
                                 <FormButton title="Send" onFormSubmit={() => this.send(this.state.msg)} />
                                 <FormButton title="Receive" onFormSubmit={() => this.receive()} />
                                 {Object.keys(this.state.receivedMsg).length != 0 &&
